@@ -43,21 +43,19 @@ class Main(object):
         self.vim.command('setlocal buftype=acwrite bufhidden=hide noswapfile')
         self.vim.command('setlocal nomodified')
 
-
         self.vim.command('echo ""')
 
         # TODO: Find a better way to define this autocommand
-        self.vim.command('au! BufWriteCmd <buffer> call GistWrite("' + gistId +'" , "' + filename +'", "' + gist["description"] + '")')
+        self.vim.command('au! BufWriteCmd <buffer> call GistSave("' + gistId +'" , "' + filename +'")')
 
-    @pynvim.function('GistWrite')
-    def GistWrite(self, args):
+    @pynvim.function('GistSave')
+    def GistSave(self, args):
         auth_config = self.get_auth_config()
 
         self.vim.command('echo "Updating gist..."')
 
         content = '\n'.join(self.vim.funcs.getline(1, '$'))
         payload = {
-                "description": args[2],
                 "files" : {
                     args[1]: {
                         "content": content
@@ -71,11 +69,53 @@ class Main(object):
             auth=(auth_config["username"], auth_config["token"])
         )
 
+        self.vim.command('setlocal nomodified')
         self.vim.command('echo ""')
 
     @pynvim.command('GistCreate')
     def GistCreate(self):
-        self.vim.command('echo "Creating gist..."')
+        auth_config = self.get_auth_config()
+
+        parse_buffer_name = re.search('gist:(.*)\/(.*)', self.vim.current.buffer.name)
+
+        if parse_buffer_name:
+            gist_id = parse_buffer_name.group(1)
+            filename = parse_buffer_name.group(2)
+
+            self.GistSave([gist_id, filename])
+        else:
+            content = '\n'.join(self.vim.funcs.getline(1, '$'))
+
+            self.vim.command('call inputsave()')
+            self.vim.command("let nvim_gist_filename = input('Enter the filename: ')")
+            self.vim.command('call inputrestore()')
+
+            self.vim.command('echo "Creating gist..."')
+
+            payload = {
+                "files" : {
+                    self.vim.vars["nvim_gist_filename"]: {
+                        "content": content
+                        }
+                    }
+                }
+
+            response = requests.post(
+                'https://api.github.com/gists',
+                json=payload,
+                auth=(auth_config["username"], auth_config["token"])
+            )
+            gist = response.json()
+
+            self.vim.funcs.execute('noautocmd file gist:' + gist["id"] + '/' + self.vim.vars["nvim_gist_filename"])
+
+            self.vim.command('setlocal buftype=acwrite bufhidden=hide noswapfile')
+            self.vim.command('setlocal nomodified')
+
+            self.vim.command('echo ""')
+
+            # TODO: Find a better way to define this autocommand
+            self.vim.command('au! BufWriteCmd <buffer> call GistSave("' + gist["id"] +'" , "' + self.vim.vars["nvim_gist_filename"] +'")')
 
     @pynvim.command('GistList')
     def GistList(self):
