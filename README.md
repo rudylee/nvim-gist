@@ -9,10 +9,8 @@ This plugin is based on [vim-gist](https://github.com/mattn/vim-gist). It is usi
 For [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```
-Plug 'rudylee/nvim-gist'
+Plug 'rudylee/nvim-gist', { 'do': ':UpdateRemotePlugins' }
 ```
-
-and then run `UpdateRemotePlugins` inside your Neovim
 
 # Setting Up
 
