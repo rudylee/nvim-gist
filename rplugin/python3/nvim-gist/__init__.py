@@ -109,6 +109,8 @@ class Main(object):
 
             self.vim.funcs.execute('noautocmd file gist:' + gist["id"] + '/' + self.vim.vars["nvim_gist_filename"])
 
+            self.detect_syntax(self.vim.vars["nvim_gist_filename"])
+
             self.vim.command('setlocal buftype=acwrite bufhidden=hide noswapfile')
             self.vim.command('setlocal nomodified')
 
