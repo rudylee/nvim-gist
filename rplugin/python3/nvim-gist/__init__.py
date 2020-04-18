@@ -30,13 +30,17 @@ class Main(object):
 
         content = gist["files"][filename]["content"]
 
-        self.close_existing_buffers()
+        # Change the buffer name to gistId and filename
+        buffer_name = 'gist:' + gistId + '/' + filename
+
+        # Close existing gist buffer
+        self.close_existing_buffers(buffer_name)
 
         self.vim.command('silent noautocmd new')
 
-        self.detect_syntax(filename)
+        self.vim.funcs.execute('noautocmd file ' + buffer_name)
 
-        self.vim.funcs.execute('noautocmd file gist:' + gistId + '/' + filename)
+        self.detect_syntax(filename)
 
         self.vim.funcs.setline(1, content.split('\n'))
 
@@ -188,9 +192,9 @@ class Main(object):
                 if self.vim.vars["nvim_gist_answer"] == 1:
                     return self.get_auth_config()
 
-    def close_existing_buffers(self):
+    def close_existing_buffers(self, target_buffer=''):
         for existingBuffer in self.vim.buffers:
-            if existingBuffer.name.find(self.bufferName) != -1 and self.vim.funcs.buflisted(existingBuffer):
+            if (existingBuffer.name.find(target_buffer) != -1 or existingBuffer.name.find(self.bufferName)) and self.vim.funcs.buflisted(existingBuffer):
                 self.vim.command('silent! bd ' + str(existingBuffer.number))
 
     def detect_syntax(self, filename):
